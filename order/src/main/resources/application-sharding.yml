@@ -1,0 +1,51 @@
+spring:
+  shardingsphere:
+    datasource:
+      #Canonical names should be kebab-case ('-' separated), lowercase alpha-numeric characters and must start with a letter
+      names: ds0,ds1
+      #数据源1
+      ds0:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/springboot_db1?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&autoReconnect=true&serverTimezone=UTC
+        username: root
+        password: root123456
+      #数据源2
+      ds1:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/springboot_db2?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&autoReconnect=true&serverTimezone=UTC
+        username: root
+        password: root123456
+    rules:
+      props:
+        sql.show: true
+      tables:
+        springboot_order:
+          key-generator-column-name: id  #主键
+          actualDataNodes: ds${0..1}.springboot_order_${0..1} #数据节点,均匀分布
+          # 分库策略
+          databaseStrategy:
+            standard:
+              shardingColumn: user_id
+              shardingAlgorithmName: database_inline #行表达式
+          # 分表策略
+          tableStrategy:
+            standard:
+              shardingColumn: id
+              shardingAlgorithmName: table_inline #行表达式
+          keyGenerator:
+            column: id
+            type: SNOWFLAKE
+      # 配置分片算法
+      shardingAlgorithms:
+        database_inline:
+          type: INLINE #行表达式
+          props:
+            algorithm-expression: ds${user_id % 2}
+        table_inline:
+          type: INLINE #行表达式
+          props:
+            algorithm-expression: springboot_order_${id % 2}
+
+
